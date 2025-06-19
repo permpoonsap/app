@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class HealthDataScreen extends StatefulWidget {
+  const HealthDataScreen({super.key});
+
   @override
   _HealthDataScreenState createState() => _HealthDataScreenState();
 }

@@ -5,6 +5,8 @@ import '../provider/medicine_provider.dart';
 import '../model/medicine_item.dart';
 
 class MedicineHistoryScreen extends StatelessWidget {
+  const MedicineHistoryScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final historyList = Provider.of<MedicineProvider>(context)
@@ -201,7 +203,7 @@ class MedicineHistoryScreen extends StatelessWidget {
                       ),
                       SizedBox(width: 6),
                       Text(
-                        isToday ? "วันนี้ เวลา $thaiTime น." : "$thaiDate เวลา $thaiTime น.",
+                        isToday ? "วันนี้ เวลา $thaiTime" : "$thaiDate เวลา $thaiTime ",
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.grey[600],

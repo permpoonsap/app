@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class DailySummaryScreen extends StatefulWidget {
+  const DailySummaryScreen({super.key});
+
   @override
   _DailySummaryScreenState createState() => _DailySummaryScreenState();
 }

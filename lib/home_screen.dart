@@ -7,6 +7,8 @@ import 'notification_service.dart'; // **IMPORTANT: Adjust this import path to y
 class HomeScreen extends StatelessWidget {
   final String userName = "ลองใจ เย็นเย็น";
 
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

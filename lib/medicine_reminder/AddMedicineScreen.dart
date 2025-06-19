@@ -7,6 +7,8 @@ import '../provider/medicine_provider.dart';
 import '../notification_service.dart';
 
 class AddMedicineScreen extends StatefulWidget {
+  const AddMedicineScreen({super.key});
+
   @override
   _AddMedicineScreenState createState() => _AddMedicineScreenState();
 }
@@ -23,7 +25,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     final now = DateTime.now();
     final dt = DateTime(
         now.year, now.month, now.day, selectedTime.hour, selectedTime.minute);
-    return DateFormat('HH:mm').format(dt) + " น.";
+    return "${DateFormat('HH:mm').format(dt)} น.";
   }
 
   void _updateTimeFromText() {
@@ -85,7 +87,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     await NotificationService().scheduleNotification(
       id: scheduledDate.millisecondsSinceEpoch.remainder(100000),
       title: 'ถึงเวลาทานยา 💊',
-      body: 'อย่าลืมทาน $name จำนวน $dose เม็ด เวลา ${formattedTime}',
+      body: 'อย่าลืมทาน $name จำนวน $dose เม็ด เวลา $formattedTime',
       scheduledDate: scheduledDate,
     );
 
