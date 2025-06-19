@@ -1,8 +1,9 @@
+import 'package:elderly_health_app/Appointment/appointmentScreen.dart';
 import 'package:flutter/material.dart';
 import 'screens/daily_summary_screen.dart';
 import 'screens/health_data_screen.dart';
 import 'medicine_reminder/medicine_reminder_screen.dart';
-import 'notification_service.dart'; // **IMPORTANT: Adjust this import path to your actual NotificationService file**
+
 
 class HomeScreen extends StatelessWidget {
   final String userName = "ลองใจ เย็นเย็น";
@@ -97,8 +98,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-
-            // ช่องค้นหาที่ปรับปรุงแล้ว
             Container(
               margin: EdgeInsets.only(bottom: 24),
               child: TextField(
@@ -129,20 +128,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // Notification Test Button
-            // ElevatedButton(
-            //   child: Text("ทดสอบแจ้งเตือนทันที"),
-            //   onPressed: () {
-            //     // Ensure NotificationService is properly initialized and accessible
-            //     NotificationService().showNotification(
-            //       id: 999,
-            //       title: "แจ้งเตือนทดสอบ",
-            //       body: "นี่คือการแจ้งเตือนทันที",
-            //     );
-            //   },
-            // ),
-            SizedBox(height: 24), // Add some spacing after the button
-
+            SizedBox(height: 24), 
 
             // Grid เมนูที่ปรับปรุงแล้ว
             GridView.count(
@@ -151,7 +137,7 @@ class HomeScreen extends StatelessWidget {
               crossAxisCount: 2,
               mainAxisSpacing: 20,
               crossAxisSpacing: 20,
-              childAspectRatio: 0.85, // ทำให้การ์ดสูงขึ้นเล็กน้อย
+              childAspectRatio: 0.85, 
               children: [
                 _buildEnhancedMenuTile(
                   context,
@@ -173,7 +159,10 @@ class HomeScreen extends StatelessWidget {
                   Color(0xFF7B68EE),
                   'จัดการการนัดหมาย',
                   () {
-                    // TODO: ไปยังหน้านัดพบแพทย์
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AppointmentScreen()),
+                    );
                   }
                 ),
                 _buildEnhancedMenuTile(

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import '../model/medicine_item.dart';
 import '../provider/medicine_provider.dart';
-import '../notification_service.dart';
+
 
 class AddMedicineScreen extends StatefulWidget {
   const AddMedicineScreen({super.key});
@@ -70,7 +70,6 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     Provider.of<MedicineProvider>(context, listen: false).addMedicine(item);
 
     final now = DateTime.now();
-// ➤ ตรวจสอบว่ากำหนดเวลาในอดีตหรือไม่ ถ้าใช่ให้ขยับเป็นวันถัดไป
     DateTime scheduledDate = DateTime(
       now.year,
       now.month,
@@ -82,14 +81,6 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(Duration(days: 1));
     }
-
-// ➤ เรียกแจ้งเตือน
-    await NotificationService().scheduleNotification(
-      id: scheduledDate.millisecondsSinceEpoch.remainder(100000),
-      title: 'ถึงเวลาทานยา 💊',
-      body: 'อย่าลืมทาน $name จำนวน $dose เม็ด เวลา $formattedTime',
-      scheduledDate: scheduledDate,
-    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -14,7 +14,7 @@ class MedicineHistoryScreen extends StatelessWidget {
         .where((item) => item.isTaken)
         .toList();
 
-    // จัดเรียงตามเวลาที่ทานยาล่าสุด (เวลาล่าสุดอยู่บนสุด)
+    
     historyList.sort((a, b) {
       final aTime = a.takenAt ?? DateTime.now();
       final bTime = b.takenAt ?? DateTime.now();
