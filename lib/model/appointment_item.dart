@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class AppointmentItem {
   final String doctorName;
   final String reason;

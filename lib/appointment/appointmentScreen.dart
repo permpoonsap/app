@@ -5,6 +5,8 @@ import '../model/appointment_item.dart';
 import 'AddAppointmentScreen.dart';
 
 class AppointmentScreen extends StatelessWidget {
+  const AppointmentScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final appointments = context.watch<AppointmentProvider>().appointments;
@@ -36,8 +38,8 @@ class AppointmentScreen extends StatelessWidget {
             ),
           );
         },
-        child: Icon(Icons.add),
         backgroundColor: Colors.teal[600],
+        child: Icon(Icons.add),
       ),
     );
   }
@@ -45,7 +47,8 @@ class AppointmentScreen extends StatelessWidget {
   Widget _buildAppointmentCardFromModel(AppointmentItem item) {
     final date = item.dateTime;
     final dateStr = "${date.day}/${date.month}/${date.year}";
-    final timeStr = "${date.hour}:${date.minute.toString().padLeft(2, '0')} น.";
+    final timeStr =
+        "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} น.";
 
     return Card(
       margin: EdgeInsets.only(bottom: 16),
@@ -53,11 +56,12 @@ class AppointmentScreen extends StatelessWidget {
       elevation: 3,
       child: ListTile(
         leading: Icon(Icons.medical_services_outlined, color: Colors.teal[700]),
-        title: Text(item.doctorName, style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(item.doctorName,
+            style: TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("เหตุผล: ${item.reason}"),
+            Text("เหตุผล: " + item.reason),
             Text("วันที่: $dateStr  เวลา: $timeStr"),
           ],
         ),

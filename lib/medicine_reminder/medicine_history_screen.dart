@@ -7,49 +7,117 @@ import '../model/medicine_item.dart';
 class MedicineHistoryScreen extends StatelessWidget {
   const MedicineHistoryScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final historyList = Provider.of<MedicineProvider>(context)
-        .items
-        .where((item) => item.isTaken)
-        .toList();
+  // Load medicine history efficiently
+  Future<List<MedicineItem>> _loadMedicineHistory(
+      MedicineProvider medicineProvider) async {
+    // Load medicines if not already loaded
+    if (medicineProvider.medicines.isEmpty &&
+        medicineProvider.medicineHistory.isEmpty) {
+      await medicineProvider.loadMedicines();
+    }
 
-    
-    historyList.sort((a, b) {
+    // Get medicine history for last 30 days
+    final endDate = DateTime.now();
+    final startDate = endDate.subtract(Duration(days: 30));
+    final historyList =
+        medicineProvider.getMedicineHistoryForDateRange(startDate, endDate);
+    final takenMedicines = historyList.where((item) => item.isTaken).toList();
+
+    // เรียงจากล่าสุดไปเก่าสุด
+    takenMedicines.sort((a, b) {
       final aTime = a.takenAt ?? DateTime.now();
       final bTime = b.takenAt ?? DateTime.now();
-      return bTime.compareTo(aTime); // เรียงจากล่าสุดไปเก่าสุด
+      return bTime.compareTo(aTime);
     });
 
-    return Scaffold(
-      backgroundColor: Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF2E7D5F),
-        elevation: 2,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white, size: 28),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          "ประวัติการทานยา",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: historyList.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              itemCount: historyList.length,
-              itemBuilder: (context, index) {
-                final item = historyList[index];
-                return _buildHistoryCard(context, item, index == 0);
-              },
+    return takenMedicines;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MedicineProvider>(
+      builder: (context, medicineProvider, child) {
+        return Scaffold(
+          backgroundColor: Color(0xFFF8F9FA),
+          appBar: AppBar(
+            backgroundColor: Color(0xFF2E7D5F),
+            elevation: 2,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+              onPressed: () => Navigator.pop(context),
             ),
+            title: Text(
+              "ประวัติการทานยา",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+          ),
+          body: FutureBuilder(
+            future: _loadMedicineHistory(medicineProvider),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Color(0xFF2E7D5F)),
+                      SizedBox(height: 16),
+                      Text(
+                        "กำลังโหลดประวัติ...",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red[300],
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        "เกิดข้อผิดพลาดในการโหลดข้อมูล",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final takenMedicines = snapshot.data ?? [];
+
+              return takenMedicines.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      itemCount: takenMedicines.length,
+                      itemBuilder: (context, index) {
+                        final item = takenMedicines[index];
+                        return _buildHistoryCard(context, item, index == 0);
+                      },
+                    );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -97,9 +165,8 @@ class MedicineHistoryScreen extends StatelessWidget {
     );
   }
 
-
-
-  Widget _buildHistoryCard(BuildContext context, dynamic item, bool isLatest) {
+  Widget _buildHistoryCard(
+      BuildContext context, MedicineItem item, bool isLatest) {
     final takenTime = item.takenAt ?? DateTime.now();
     final thaiDate = _formatThaiDate(takenTime);
     final thaiTime = _formatThaiTime(takenTime);
@@ -110,7 +177,7 @@ class MedicineHistoryScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: isLatest 
+        border: isLatest
             ? Border.all(color: Color(0xFF32CD32), width: 2)
             : Border.all(color: Colors.grey[200]!, width: 1),
         boxShadow: [
@@ -158,7 +225,8 @@ class MedicineHistoryScreen extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Color(0xFF4A90E2).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(6),
@@ -175,7 +243,8 @@ class MedicineHistoryScreen extends StatelessWidget {
                       if (isLatest) ...[
                         SizedBox(width: 8),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Color(0xFF32CD32).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(6),
@@ -203,7 +272,9 @@ class MedicineHistoryScreen extends StatelessWidget {
                       ),
                       SizedBox(width: 6),
                       Text(
-                        isToday ? "วันนี้ เวลา $thaiTime" : "$thaiDate เวลา $thaiTime ",
+                        isToday
+                            ? "วันนี้ เวลา $thaiTime"
+                            : "$thaiDate เวลา $thaiTime ",
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.grey[600],

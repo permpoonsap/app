@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/appointment_provider.dart';
 import '../model/appointment_item.dart';
-import 'appointmentScreen.dart';
 
 class AddAppointmentScreen extends StatefulWidget {
+  const AddAppointmentScreen({super.key});
+
   @override
   _AddAppointmentScreenState createState() => _AddAppointmentScreenState();
 }
@@ -14,21 +15,24 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
 
   void _submitForm() {
-    if (_formKey.currentState!.validate() && _selectedDate != null) {
+    if (_formKey.currentState!.validate() &&
+        _selectedDate != null &&
+        _selectedTime != null) {
+      final date = _selectedDate!;
+      final time = _selectedTime!;
+      final combinedDateTime =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
       final newAppointment = AppointmentItem(
         doctorName: _titleController.text,
         reason: _descriptionController.text,
-        dateTime: _selectedDate!,
+        dateTime: combinedDateTime,
         alertBefore: Duration(minutes: 30), // หรือให้เลือกจากผู้ใช้ก็ได้
       );
-
-      // ✅ เรียกผ่าน Provider
       Provider.of<AppointmentProvider>(context, listen: false)
           .addAppointment(newAppointment);
-
-      // ✅ ปิดหน้าจอ
       Navigator.pop(context);
     }
   }
@@ -43,6 +47,18 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
     if (pickedDate != null) {
       setState(() {
         _selectedDate = pickedDate;
+      });
+    }
+  }
+
+  void _presentTimePicker() async {
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (pickedTime != null) {
+      setState(() {
+        _selectedTime = pickedTime;
       });
     }
   }
@@ -85,6 +101,20 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                   TextButton(
                     onPressed: _presentDatePicker,
                     child: Text('เลือกวันที่'),
+                  )
+                ],
+              ),
+              Row(
+                children: [
+                  Text(
+                    _selectedTime == null
+                        ? 'ยังไม่เลือกเวลา'
+                        : 'เวลา: ${_selectedTime!.format(context)}',
+                  ),
+                  Spacer(),
+                  TextButton(
+                    onPressed: _presentTimePicker,
+                    child: Text('เลือกเวลา'),
                   )
                 ],
               ),
