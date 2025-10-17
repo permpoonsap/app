@@ -5,12 +5,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ExerciseLogProvider extends ChangeNotifier {
   // Map<date, List<exerciseName>>
   Map<String, List<String>> _logs = {};
+  String? _currentUserId;
 
   Map<String, List<String>> get logs => _logs;
+  String? get currentUserId => _currentUserId;
+
+  // Set current user ID
+  void setCurrentUserId(String userId) {
+    _currentUserId = userId;
+    // Clear current data when switching users
+    _logs.clear();
+    notifyListeners();
+  }
 
   Future<void> loadLogs() async {
+    if (_currentUserId == null) return;
+
     final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('exercise_logs');
+    final jsonString = prefs.getString('exercise_logs_$_currentUserId');
     if (jsonString != null) {
       final Map<String, dynamic> decoded = json.decode(jsonString);
       _logs =
@@ -50,6 +62,8 @@ class ExerciseLogProvider extends ChangeNotifier {
   }
 
   Future<void> addLog(String exerciseName) async {
+    if (_currentUserId == null) return;
+
     final today = DateTime.now();
     final dateKey =
         "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
@@ -64,9 +78,11 @@ class ExerciseLogProvider extends ChangeNotifier {
   }
 
   Future<void> _saveLogs() async {
+    if (_currentUserId == null) return;
+
     final prefs = await SharedPreferences.getInstance();
     final jsonString = json.encode(_logs);
-    await prefs.setString('exercise_logs', jsonString);
+    await prefs.setString('exercise_logs_$_currentUserId', jsonString);
   }
 
   List<String> getLogsForDate(DateTime date) {

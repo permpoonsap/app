@@ -38,10 +38,18 @@ class MedicineReminderScreen extends StatelessWidget {
             actions: [
               IconButton(
                 icon: Icon(Icons.history, size: 24, color: Colors.white),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => MedicineHistoryScreen()),
-                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => MedicineHistoryScreen()),
+                  );
+                  // รีเฟรชข้อมูลยาเมื่อกลับมาจากหน้าประวัติ
+                  if (context.mounted) {
+                    final medicineProvider =
+                        Provider.of<MedicineProvider>(context, listen: false);
+                    await medicineProvider.loadMedicines();
+                  }
+                },
                 tooltip: "ประวัติการทานยา",
               ),
               SizedBox(width: 12),

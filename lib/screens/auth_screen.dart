@@ -37,7 +37,7 @@ class _AuthScreenState extends State<AuthScreen> {
       );
 
       if (!mounted || _isDisposed) return;
-      // ลบ popup สำเร็จออก ไม่ต้องแสดงอะไร ปล่อยให้ StreamBuilder เปลี่ยนหน้าเอง
+      
     } on FirebaseAuthException catch (e) {
       if (!mounted || _isDisposed) return;
       String message = "เกิดข้อผิดพลาด กรุณาลองใหม่";

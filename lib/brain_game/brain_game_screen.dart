@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'calculation_game_screen.dart';
 import 'memory_game_screen.dart';
+import 'matching_game_screen.dart';
+import 'sequence_game_screen.dart';
 
 class BrainGameScreen extends StatelessWidget {
   const BrainGameScreen({Key? key}) : super(key: key);
@@ -140,10 +142,10 @@ class BrainGameScreen extends StatelessWidget {
                     Color(0xFFFF9800),
                     'ฝึกการจับคู่และสังเกต',
                     () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('เกมนี้จะเปิดให้เล่นเร็วๆ นี้'),
-                          backgroundColor: Colors.orange,
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MatchingGameScreen(),
                         ),
                       );
                     },
@@ -155,10 +157,10 @@ class BrainGameScreen extends StatelessWidget {
                     Color(0xFF9C27B0),
                     'ฝึกการเรียงลำดับ',
                     () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('เกมนี้จะเปิดให้เล่นเร็วๆ นี้'),
-                          backgroundColor: Colors.orange,
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SequenceGameScreen(),
                         ),
                       );
                     },

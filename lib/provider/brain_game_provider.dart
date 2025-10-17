@@ -5,12 +5,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BrainGameProvider extends ChangeNotifier {
   // Map<date, List<gameResult>>
   Map<String, List<GameResult>> _gameLogs = {};
+  String? _currentUserId;
 
   Map<String, List<GameResult>> get gameLogs => _gameLogs;
+  String? get currentUserId => _currentUserId;
+
+  // Set current user ID
+  void setCurrentUserId(String userId) {
+    _currentUserId = userId;
+    // Clear current data when switching users
+    _gameLogs.clear();
+    notifyListeners();
+  }
 
   Future<void> loadGameLogs() async {
+    if (_currentUserId == null) return;
+
     final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('brain_game_logs');
+    final jsonString = prefs.getString('brain_game_logs_$_currentUserId');
     if (jsonString != null) {
       final Map<String, dynamic> decoded = json.decode(jsonString);
       _gameLogs = decoded.map((key, value) => MapEntry(
@@ -51,6 +63,8 @@ class BrainGameProvider extends ChangeNotifier {
 
   Future<void> addGameResult(
       String gameType, int score, int totalQuestions) async {
+    if (_currentUserId == null) return;
+
     final today = DateTime.now();
     final dateKey =
         "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
@@ -72,6 +86,8 @@ class BrainGameProvider extends ChangeNotifier {
   }
 
   Future<void> _saveGameLogs() async {
+    if (_currentUserId == null) return;
+
     final prefs = await SharedPreferences.getInstance();
     final Map<String, List<Map<String, dynamic>>> dataToSave = {};
 
@@ -80,7 +96,7 @@ class BrainGameProvider extends ChangeNotifier {
     });
 
     final jsonString = json.encode(dataToSave);
-    await prefs.setString('brain_game_logs', jsonString);
+    await prefs.setString('brain_game_logs_$_currentUserId', jsonString);
   }
 
   List<GameResult> getGameLogsForDate(DateTime date) {

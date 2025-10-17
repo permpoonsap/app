@@ -49,4 +49,24 @@ class NotificationService {
       print('เกิดข้อผิดพลาดขณะตั้งเวลาแจ้งเตือน: $e');
     }
   }
+
+  // ยกเลิกการแจ้งเตือน
+  static Future<void> cancelNotification(int id) async {
+    try {
+      await AwesomeNotifications().cancel(id);
+      print('Notification cancelled: $id');
+    } catch (e) {
+      print('เกิดข้อผิดพลาดขณะยกเลิกการแจ้งเตือน: $e');
+    }
+  }
+
+  // ยกเลิกการแจ้งเตือนทั้งหมด
+  static Future<void> cancelAllNotifications() async {
+    try {
+      await AwesomeNotifications().cancelAll();
+      print('All notifications cancelled');
+    } catch (e) {
+      print('เกิดข้อผิดพลาดขณะยกเลิกการแจ้งเตือนทั้งหมด: $e');
+    }
+  }
 }

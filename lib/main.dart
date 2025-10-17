@@ -9,8 +9,9 @@ import 'provider/medicine_provider.dart';
 import 'provider/appointment_provider.dart';
 import 'provider/exercise_log_provider.dart';
 import 'provider/brain_game_provider.dart';
+import 'provider/daily_goal_provider.dart';
+import 'provider/health_profile_provider.dart';
 import 'services/auth_service.dart';
-import 'utils/context_utils.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/auth_screen.dart';
@@ -45,13 +46,12 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-            create: (_) => MedicineProvider()..loadMedicines()),
+        ChangeNotifierProvider(create: (_) => MedicineProvider()),
         ChangeNotifierProvider(create: (_) => AppointmentProvider()),
-        ChangeNotifierProvider(
-            create: (_) => ExerciseLogProvider()..loadLogs()),
-        ChangeNotifierProvider(
-            create: (_) => BrainGameProvider()..loadGameLogs()),
+        ChangeNotifierProvider(create: (_) => ExerciseLogProvider()),
+        ChangeNotifierProvider(create: (_) => BrainGameProvider()),
+        ChangeNotifierProvider(create: (_) => DailyGoalProvider()),
+        ChangeNotifierProvider(create: (_) => HealthProfileProvider()),
       ],
       child: MyApp(),
     ),
@@ -97,15 +97,15 @@ class MyApp extends StatelessWidget {
           }
 
           if (snapshot.hasData && snapshot.data != null) {
-            // User is logged in, set user ID for medicine provider
-            WidgetsBinding.instance.addPostFrameCallback((_) {
+            // User is logged in, set user ID for all providers
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
               if (context.mounted) {
                 try {
-                  AuthService.setCurrentUserForMedicineProvider(context);
+                  await AuthService.setCurrentUserForProviders(context);
                   // Check if it's a new day and reset medicines
                   _checkAndResetMedicines(context);
                 } catch (e) {
-                  print('Error setting user for medicine provider: $e');
+                  print('Error setting user for providers: $e');
                 }
               }
             });

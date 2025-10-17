@@ -276,7 +276,7 @@ class MedicineHistoryScreen extends StatelessWidget {
                             ? "วันนี้ เวลา $thaiTime"
                             : "$thaiDate เวลา $thaiTime ",
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           color: Colors.grey[600],
                         ),
                       ),
@@ -296,7 +296,7 @@ class MedicineHistoryScreen extends StatelessWidget {
   }
 
   String _formatThaiDate(DateTime dateTime) {
-    return DateFormat.yMMMMd('th').format(dateTime);
+    return DateFormat.MMMMd('th').format(dateTime); // ไม่แสดงปี
   }
 
   bool _isToday(DateTime dateTime) {

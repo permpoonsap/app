@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import '../model/medicine_item.dart';
 import '../provider/medicine_provider.dart';
-import '../notification/notification_service.dart';
 
 class AddMedicineScreen extends StatefulWidget {
   const AddMedicineScreen({super.key});
@@ -93,13 +92,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       await Provider.of<MedicineProvider>(context, listen: false)
           .addMedicine(item);
 
-      // Schedule notification
-      await NotificationService.scheduleNotification(
-        id: name.hashCode ^ scheduledDate.hashCode, // simple unique id
-        title: 'แจ้งเตือนยา',
-        body: 'ถึงเวลาที่ต้องทานยาแล้ว $name ($dose เม็ด)',
-        scheduledDate: scheduledDate,
-      );
+      // การแจ้งเตือนจะถูกสร้างโดย MedicineProvider อัตโนมัติ
 
       if (context.mounted) {
         scaffoldMessenger.showSnackBar(

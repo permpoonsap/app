@@ -2,6 +2,8 @@
 
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Optional: not required for ACTION_DIAL via tel:, but safe for visibility on Android 11+ -->
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
 
     <application
         android:label="elderly_health_app"
@@ -48,6 +50,11 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
+        </intent>
+        <!-- Allow visibility of dialer apps when launching tel: -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
         </intent>
     </queries>
 </manifest>

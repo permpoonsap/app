@@ -75,7 +75,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Spacer(),
+            SizedBox(height: 40), // เพิ่มระยะห่างแทน Spacer()
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -99,6 +99,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+            SizedBox(height: 20), // เพิ่มระยะห่างด้านล่าง
           ],
         ),
       ),

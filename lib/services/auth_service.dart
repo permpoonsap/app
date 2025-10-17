@@ -2,6 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/medicine_provider.dart';
+import '../provider/daily_goal_provider.dart';
+import '../provider/health_profile_provider.dart';
+import '../provider/appointment_provider.dart';
+import '../provider/exercise_log_provider.dart';
+import '../provider/brain_game_provider.dart';
+import '../database/local_database.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,10 +24,17 @@ class AuthService {
     String password,
   ) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      // Set current user ID in LocalDatabase
+      if (userCredential.user != null) {
+        LocalDatabase.setCurrentUserId(userCredential.user!.uid);
+      }
+
+      return userCredential;
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -33,10 +46,17 @@ class AuthService {
     String password,
   ) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      // Set current user ID in LocalDatabase
+      if (userCredential.user != null) {
+        LocalDatabase.setCurrentUserId(userCredential.user!.uid);
+      }
+
+      return userCredential;
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -45,12 +65,31 @@ class AuthService {
   // Logout
   static Future<void> signOut(BuildContext context) async {
     try {
-      // Clear medicine data before logout
+      // Clear current user ID
+      LocalDatabase.setCurrentUserId('');
+
+      // Clear provider data before logout
       if (context.mounted) {
         try {
+          // Clear MedicineProvider
           final medicineProvider =
               Provider.of<MedicineProvider>(context, listen: false);
-          medicineProvider.clearAllData();
+          medicineProvider.setCurrentUserId(''); // Clear current user
+
+          // Clear DailyGoalProvider
+          final dailyGoalProvider =
+              Provider.of<DailyGoalProvider>(context, listen: false);
+          dailyGoalProvider.setCurrentUserId(''); // Clear current user
+
+          // Clear HealthProfileProvider
+          final healthProfileProvider =
+              Provider.of<HealthProfileProvider>(context, listen: false);
+          healthProfileProvider.setCurrentUserId(''); // Clear current user
+
+          // Clear AppointmentProvider
+          final appointmentProvider =
+              Provider.of<AppointmentProvider>(context, listen: false);
+          appointmentProvider.setCurrentUserId('');
         } catch (e) {
           // Provider might not be available, ignore this error
           print('Provider not available during logout: $e');
@@ -102,22 +141,53 @@ class AuthService {
     return _auth.currentUser?.email;
   }
 
-  // ตั้งค่า User ID ให้กับ MedicineProvider
-  static void setCurrentUserForMedicineProvider(BuildContext context) {
+  // ตั้งค่า User ID ให้กับ Providers ทั้งหมด
+  static Future<void> setCurrentUserForProviders(BuildContext context) async {
     try {
       User? user = _auth.currentUser;
       if (user != null && context.mounted) {
         try {
+          // Set user ID for MedicineProvider
           final medicineProvider =
               Provider.of<MedicineProvider>(context, listen: false);
-          // No need to set user for local storage
+          medicineProvider.setCurrentUserId(user.uid);
+
+          // Set user ID for DailyGoalProvider
+          final dailyGoalProvider =
+              Provider.of<DailyGoalProvider>(context, listen: false);
+          dailyGoalProvider.setCurrentUserId(user.uid);
+
+          // Set user ID for HealthProfileProvider
+          final healthProfileProvider =
+              Provider.of<HealthProfileProvider>(context, listen: false);
+          healthProfileProvider.setCurrentUserId(user.uid);
+
+          // Set user ID for AppointmentProvider
+          final appointmentProvider =
+              Provider.of<AppointmentProvider>(context, listen: false);
+          appointmentProvider.setCurrentUserId(user.uid);
+
+          // Set user ID for ExerciseLogProvider
+          final exerciseProvider =
+              Provider.of<ExerciseLogProvider>(context, listen: false);
+          exerciseProvider.setCurrentUserId(user.uid);
+
+          // Set user ID for BrainGameProvider
+          final brainGameProvider =
+              Provider.of<BrainGameProvider>(context, listen: false);
+          brainGameProvider.setCurrentUserId(user.uid);
+
+          // โหลดข้อมูลสำหรับ provider ใหม่
+          await medicineProvider.loadMedicines();
+          await exerciseProvider.loadLogs();
+          await brainGameProvider.loadGameLogs();
         } catch (e) {
           // Provider might not be available, ignore this error
           print('Provider not available when setting user: $e');
         }
       }
     } catch (e) {
-      print('Error setting current user for medicine provider: $e');
+      print('Error setting current user for providers: $e');
     }
   }
 

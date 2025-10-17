@@ -1,5 +1,6 @@
 import 'package:elderly_health_app/Appointment/appointmentScreen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'screens/daily_summary_screen.dart';
 import 'screens/health_data_screen.dart';
@@ -11,6 +12,9 @@ import 'services/auth_service.dart';
 import 'utils/context_utils.dart';
 import 'exercise/exercise_screen.dart';
 import 'brain_game/brain_game_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'screens/daily_goals_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +27,177 @@ class _HomeScreenState extends State<HomeScreen> {
   String _userName = "กำลังโหลด...";
   late Stream<DocumentSnapshot> _userStream;
   StreamSubscription<DocumentSnapshot>? _userSubscription;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  Future<void> _callEmergencyContact() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (mounted) {
+          ContextUtils.showErrorSnackBar(context, 'กรุณาเข้าสู่ระบบก่อนใช้งาน');
+        }
+        return;
+      }
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (!doc.exists) {
+        if (mounted) {
+          ContextUtils.showWarningSnackBar(context, 'ยังไม่มีข้อมูลผู้ใช้');
+        }
+        return;
+      }
+
+      final data = doc.data() as Map<String, dynamic>;
+      final String? rawPhone = (data['emergencyPhone'] as String?)?.trim();
+      if (rawPhone == null || rawPhone.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('กรุณาเพิ่มเบอร์ติดต่อฉุกเฉินก่อน'),
+              action: SnackBarAction(
+                label: 'เพิ่มตอนนี้',
+                onPressed: _navigateToProfile,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show bottom sheet with contact info and actions
+      if (mounted) {
+        _showEmergencyContactSheet(
+          name:
+              (data['emergencyName'] as String?)?.trim() ?? 'ผู้ติดต่อฉุกเฉิน',
+          phone: rawPhone,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ContextUtils.showErrorSnackBar(context, 'เกิดข้อผิดพลาด: $e');
+      }
+    }
+  }
+
+  void _showEmergencyContactSheet(
+      {required String name, required String phone}) {
+    final String phoneNormalized = phone.replaceAll(RegExp(r'\s+'), '');
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.support_agent, color: Colors.red),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('ติดต่อฉุกเฉิน',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 2),
+                          Text('ชื่อผู้ติดต่อ: ' + name,
+                              style: TextStyle(color: Colors.grey[700])),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.phone, color: Colors.grey[700]),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          phoneNormalized,
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.copy, size: 20),
+                        onPressed: () async {
+                          await Clipboard.setData(
+                              ClipboardData(text: phoneNormalized));
+                          if (mounted) {
+                            ContextUtils.showSuccessSnackBar(
+                                context, 'คัดลอกหมายเลขแล้ว');
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red),
+                        onPressed: () async {
+                          final uri = Uri(scheme: 'tel', path: phoneNormalized);
+                          final can = await canLaunchUrl(uri);
+                          if (can) {
+                            await launchUrl(uri,
+                                mode: LaunchMode.externalApplication);
+                          } else if (mounted) {
+                            ContextUtils.showWarningSnackBar(
+                                context, 'อุปกรณ์นี้ไม่รองรับการเปิดแอปโทร');
+                          }
+                        },
+                        icon: Icon(Icons.call, color: Colors.white),
+                        label: Text('โทรหา ' + name,
+                            style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(Icons.close),
+                        label: Text('ปิด'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -75,6 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _userSubscription?.cancel();
     super.dispose();
   }
@@ -96,10 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
           backgroundColor: Color(0xFF2E7D5F),
           elevation: 2,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(Icons.menu, color: Colors.white, size: 28),
-          ),
           title: Text(
             'หน้าหลัก',
             style: TextStyle(
@@ -221,15 +393,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          // Edit Profile Indicator
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.edit,
-                              color: Colors.grey[500],
-                              size: 20,
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -240,6 +403,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   margin: EdgeInsets.only(bottom: 12),
                   child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.trim().toLowerCase();
+                      });
+                    },
                     style: TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       hintText: 'ค้นหาฟังก์ชันที่ต้องการ...',
@@ -250,6 +419,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Icon(Icons.search,
                             size: 20, color: Colors.grey[600]),
                       ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.close),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding:
@@ -274,125 +454,146 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
                 // Menu Grid
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.0,
-                  children: [
-                    _buildEnhancedMenuTile(
-                      context,
-                      'เตือนกินยา',
-                      Icons.medication_liquid,
-                      Color(0xFF4A90E2),
-                      'จัดการยาประจำวัน',
-                      () {
+                Builder(builder: (context) {
+                  final List<Map<String, dynamic>> items = [
+                    {
+                      'title': 'เตือนกินยา',
+                      'subtitle': 'จัดการยาประจำวัน',
+                      'icon': Icons.medication_liquid,
+                      'color': Color(0xFF4A90E2),
+                      'onTap': () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => MedicineReminderScreen(),
                           ),
                         );
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'นัดพบแพทย์',
-                      Icons.local_hospital,
-                      Color(0xFF7B68EE),
-                      'จัดการการนัดหมาย',
-                      () {
+                      }
+                    },
+                    {
+                      'title': 'นัดพบแพทย์',
+                      'subtitle': 'จัดการการนัดหมาย',
+                      'icon': Icons.local_hospital,
+                      'color': Color(0xFF7B68EE),
+                      'onTap': () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => AppointmentScreen(),
                           ),
                         );
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'เป้าหมายประจำวัน',
-                      Icons.track_changes,
-                      Color(0xFF32CD32),
-                      'ตั้งเป้าหมายสุขภาพ',
-                      () {
-                        //
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'ขอความช่วยเหลือ',
-                      Icons.support_agent,
-                      Color(0xFFFF6B6B),
-                      'ติดต่อเจ้าหน้าที่',
-                      () {
-                        // TODO: ไปยังหน้าขอความช่วยเหลือ
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'ออกกำลังกาย',
-                      Icons.directions_walk,
-                      Color(0xFFFF8C00),
-                      'ท่าออกกำลังกาย',
-                      () {
+                      }
+                    },
+                    {
+                      'title': 'เป้าหมายประจำวัน',
+                      'subtitle': 'ตั้งเป้าหมายสุขภาพ',
+                      'icon': Icons.track_changes,
+                      'color': Color(0xFF32CD32),
+                      'onTap': () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DailyGoalsScreen(),
+                          ),
+                        );
+                      }
+                    },
+                    {
+                      'title': 'ขอความช่วยเหลือ',
+                      'subtitle': 'ติดต่อญาติใกล้ตัว',
+                      'icon': Icons.support_agent,
+                      'color': Color(0xFFFF6B6B),
+                      'onTap': () {
+                        _callEmergencyContact();
+                      }
+                    },
+                    {
+                      'title': 'ออกกำลังกาย',
+                      'subtitle': 'ท่าออกกำลังกาย',
+                      'icon': Icons.directions_walk,
+                      'color': Color(0xFFFF8C00),
+                      'onTap': () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (_) => ExerciseListScreen()),
                         );
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'เกมฝึกสมอง',
-                      Icons.psychology_alt,
-                      Color(0xFF9370DB),
-                      'ฝึกความจำและสมาธิ',
-                      () {
+                      }
+                    },
+                    {
+                      'title': 'เกมฝึกสมอง',
+                      'subtitle': 'ฝึกความจำและสมาธิ',
+                      'icon': Icons.psychology_alt,
+                      'color': Color(0xFF9370DB),
+                      'onTap': () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => BrainGameScreen(),
                           ),
                         );
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'สรุปรายวัน',
-                      Icons.assessment,
-                      Color(0xFF20B2AA),
-                      'ดูสรุปกิจกรรม',
-                      () {
+                      }
+                    },
+                    {
+                      'title': 'สรุปรายวัน',
+                      'subtitle': 'ดูสรุปกิจกรรม',
+                      'icon': Icons.assessment,
+                      'color': Color(0xFF20B2AA),
+                      'onTap': () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => DailySummaryScreen(),
                           ),
                         );
-                      },
-                    ),
-                    _buildEnhancedMenuTile(
-                      context,
-                      'ข้อมูลสุขภาพ',
-                      Icons.favorite,
-                      Color(0xFFE91E63),
-                      'ตรวจสอบสุขภาพ',
-                      () {
+                      }
+                    },
+                    {
+                      'title': 'ข้อมูลสุขภาพ',
+                      'subtitle': 'ตรวจสอบสุขภาพ',
+                      'icon': Icons.favorite,
+                      'color': Color(0xFFE91E63),
+                      'onTap': () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => HealthDataScreen(),
                           ),
                         );
-                      },
-                    ),
-                  ],
-                ),
+                      }
+                    },
+                  ];
+
+                  final normalized = _searchQuery;
+                  final filtered = normalized.isEmpty
+                      ? items
+                      : items.where((item) {
+                          final title = (item['title'] as String).toLowerCase();
+                          final subtitle =
+                              (item['subtitle'] as String).toLowerCase();
+                          return title.contains(normalized) ||
+                              subtitle.contains(normalized);
+                        }).toList();
+
+                  return GridView.count(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.0,
+                    children: filtered
+                        .map((item) => _buildEnhancedMenuTile(
+                              context,
+                              item['title'] as String,
+                              item['icon'] as IconData,
+                              item['color'] as Color,
+                              item['subtitle'] as String,
+                              item['onTap'] as VoidCallback,
+                            ))
+                        .toList(),
+                  );
+                }),
               ],
             ),
           ),
