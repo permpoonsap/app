@@ -703,7 +703,7 @@ class _HealthDataScreenState extends State<HealthDataScreen> {
         await healthProvider.syncFromFirestore();
       }
       if (context.mounted) {
-        Navigator.of(context).pop(); 
+        Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

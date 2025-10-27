@@ -17,15 +17,93 @@ class AppointmentScreen extends StatelessWidget {
         backgroundColor: Colors.teal[600],
       ),
       body: appointments.isEmpty
-          ? Center(child: Text('ยังไม่มีนัดหมาย'))
-          : ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: appointments.length,
-              itemBuilder: (context, index) {
-                final appointment = appointments[index];
-                return _buildAppointmentCardFromModel(
-                    context, appointment, index);
-              },
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 80,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'ยังไม่มีนัดหมาย',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'กดปุ่ม + เพื่อเพิ่มนัดหมายใหม่',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // หมายเหตุเกี่ยวกับระบบแจ้งเตือน
+                Container(
+                  margin: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.notifications_active,
+                            color: Colors.blue[600],
+                            size: 24,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'ระบบแจ้งเตือนนัดหมาย',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        '• แจ้งเตือนล่วงหน้า 1 วันก่อนนัดหมาย\n'
+                        '• แจ้งเตือนอีกครั้ง 30 นาทีก่อนนัดหมาย\n'
+                        '• การแจ้งเตือนจะแสดงบนหน้าจอและส่งเสียงเตือน',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue[700],
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // รายการนัดหมาย
+                Expanded(
+                  child: ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: appointments.length,
+                    itemBuilder: (context, index) {
+                      final appointment = appointments[index];
+                      return _buildAppointmentCardFromModel(
+                          context, appointment, index);
+                    },
+                  ),
+                ),
+              ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -52,54 +130,135 @@ class AppointmentScreen extends StatelessWidget {
     final timeStr =
         "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} น.";
 
+    // คำนวณเวลาที่เหลือจนถึงนัดหมาย
+    final now = DateTime.now();
+    final timeUntilAppointment = date.difference(now);
+    final daysUntil = timeUntilAppointment.inDays;
+    final hoursUntil = timeUntilAppointment.inHours;
+
+    String notificationStatus = '';
+    Color statusColor = Colors.grey;
+
+    if (timeUntilAppointment.isNegative) {
+      notificationStatus = 'นัดหมายผ่านไปแล้ว';
+      statusColor = Colors.red;
+    } else if (daysUntil == 0) {
+      if (hoursUntil <= 1) {
+        notificationStatus = 'แจ้งเตือนแล้ว (30 นาที)';
+        statusColor = Colors.orange;
+      } else {
+        notificationStatus = 'วันนี้นัดหมาย';
+        statusColor = Colors.blue;
+      }
+    } else if (daysUntil == 1) {
+      notificationStatus = 'แจ้งเตือนแล้ว (1 วัน)';
+      statusColor = Colors.green;
+    } else if (daysUntil <= 7) {
+      notificationStatus = 'จะแจ้งเตือนในอีก ${daysUntil} วัน';
+      statusColor = Colors.blue;
+    } else {
+      notificationStatus = 'จะแจ้งเตือนในอีก ${daysUntil} วัน';
+      statusColor = Colors.grey;
+    }
+
     return Card(
       margin: EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 3,
-      child: ListTile(
-        leading: Icon(Icons.medical_services_outlined, color: Colors.teal[700]),
-        title: Text(item.doctorName,
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("เหตุผล: " + item.reason),
-            Text("วันที่: $dateStr  เวลา: $timeStr"),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'edit':
-                _showEditAppointmentDialog(context, item, index);
-                break;
-              case 'delete':
-                _showDeleteConfirmationDialog(context, index);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.edit, size: 16),
-                  SizedBox(width: 8),
-                  Text('แก้ไข', style: TextStyle(fontSize: 12)),
-                ],
-              ),
+            Row(
+              children: [
+                Icon(Icons.medical_services_outlined,
+                    color: Colors.teal[700], size: 28),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.doctorName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "เหตุผล: " + item.reason,
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        _showEditAppointmentDialog(context, item, index);
+                        break;
+                      case 'delete':
+                        _showDeleteConfirmationDialog(context, index);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.edit, size: 16),
+                          SizedBox(width: 8),
+                          Text('แก้ไข', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 16),
+                          SizedBox(width: 8),
+                          Text('ลบ',
+                              style:
+                                  TextStyle(color: Colors.red, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.delete, color: Colors.red, size: 16),
-                  SizedBox(width: 8),
-                  Text('ลบ', style: TextStyle(color: Colors.red, fontSize: 12)),
-                ],
-              ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, color: Colors.grey[600], size: 16),
+                SizedBox(width: 8),
+                Text(
+                  "วันที่: $dateStr  เวลา: $timeStr",
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.notifications, color: statusColor, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  notificationStatus,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: statusColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -115,6 +274,7 @@ class AppointmentScreen extends StatelessWidget {
       builder: (context) => EditAppointmentDialog(
         appointment: item,
         index: index,
+        appointmentProvider: context.read<AppointmentProvider>(),
       ),
     );
   }
@@ -155,11 +315,13 @@ class AppointmentScreen extends StatelessWidget {
 class EditAppointmentDialog extends StatefulWidget {
   final AppointmentItem appointment;
   final int index;
+  final AppointmentProvider appointmentProvider;
 
   const EditAppointmentDialog({
     Key? key,
     required this.appointment,
     required this.index,
+    required this.appointmentProvider,
   }) : super(key: key);
 
   @override
@@ -222,16 +384,39 @@ class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
                     subtitle: Text(
                         '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
                     onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _selectedDate = date;
-                        });
+                      try {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(Duration(days: 365)),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: ColorScheme.light(
+                                  primary: Colors.teal[600]!,
+                                  onPrimary: Colors.white,
+                                  surface: Colors.white,
+                                  onSurface: Colors.black,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _selectedDate = date;
+                          });
+                        }
+                      } catch (e) {
+                        print('Error showing date picker: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('เกิดข้อผิดพลาดในการเลือกวันที่'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
                     },
                   ),
@@ -241,14 +426,37 @@ class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
                     title: Text('เวลา'),
                     subtitle: Text(_selectedTime.format(context)),
                     onTap: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: _selectedTime,
-                      );
-                      if (time != null) {
-                        setState(() {
-                          _selectedTime = time;
-                        });
+                      try {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: _selectedTime,
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: ColorScheme.light(
+                                  primary: Colors.teal[600]!,
+                                  onPrimary: Colors.white,
+                                  surface: Colors.white,
+                                  onSurface: Colors.black,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _selectedTime = time;
+                          });
+                        }
+                      } catch (e) {
+                        print('Error showing time picker: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('เกิดข้อผิดพลาดในการเลือกเวลา'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
                     },
                   ),
@@ -265,35 +473,44 @@ class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            if (_doctorNameController.text.isNotEmpty &&
-                _reasonController.text.isNotEmpty) {
-              final updatedAppointment = widget.appointment.copyWith(
-                doctorName: _doctorNameController.text,
-                reason: _reasonController.text,
-                dateTime: DateTime(
-                  _selectedDate.year,
-                  _selectedDate.month,
-                  _selectedDate.day,
-                  _selectedTime.hour,
-                  _selectedTime.minute,
-                ),
-              );
+            try {
+              if (_doctorNameController.text.isNotEmpty &&
+                  _reasonController.text.isNotEmpty) {
+                final updatedAppointment = widget.appointment.copyWith(
+                  doctorName: _doctorNameController.text.trim(),
+                  reason: _reasonController.text.trim(),
+                  dateTime: DateTime(
+                    _selectedDate.year,
+                    _selectedDate.month,
+                    _selectedDate.day,
+                    _selectedTime.hour,
+                    _selectedTime.minute,
+                  ),
+                );
 
-              context
-                  .read<AppointmentProvider>()
-                  .updateAppointment(widget.index, updatedAppointment);
+                widget.appointmentProvider
+                    .updateAppointment(widget.index, updatedAppointment);
 
-              Navigator.of(context).pop();
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('แก้ไขข้อมูลนัดพบแพทย์เรียบร้อยแล้ว'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('กรุณากรอกข้อมูลให้ครบถ้วน'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } catch (e) {
+              print('Error updating appointment: $e');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('แก้ไขข้อมูลนัดพบแพทย์เรียบร้อยแล้ว'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('กรุณากรอกข้อมูลให้ครบถ้วน'),
+                  content: Text('เกิดข้อผิดพลาดในการบันทึกข้อมูล'),
                   backgroundColor: Colors.red,
                 ),
               );
