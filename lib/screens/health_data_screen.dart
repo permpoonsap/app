@@ -169,14 +169,22 @@ class _HealthDataScreenState extends State<HealthDataScreen> {
             null,
           ),
           _buildHealthCard(
-            'ความดันโลหิต',
-            healthProfile.systolicBloodPressure != null &&
-                    healthProfile.diastolicBloodPressure != null
-                ? '${healthProfile.systolicBloodPressure}/${healthProfile.diastolicBloodPressure} mmHg'
+            'ความดันโลหิตบน',
+            healthProfile.systolicBloodPressure != null
+                ? '${healthProfile.systolicBloodPressure} mmHg'
                 : 'ไม่ระบุ',
             Icons.favorite,
             Colors.purple,
-            healthSummary['bloodPressureStatus'],
+            null,
+          ),
+          _buildHealthCard(
+            'ความดันโลหิตล่าง',
+            healthProfile.diastolicBloodPressure != null
+                ? '${healthProfile.diastolicBloodPressure} mmHg'
+                : 'ไม่ระบุ',
+            Icons.favorite,
+            Colors.purple,
+            null,
           ),
           _buildHealthCard(
             'ระดับน้ำตาลในเลือด',
@@ -749,19 +757,7 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
       TextEditingController();
   final TextEditingController _drugAllergiesController =
       TextEditingController();
-
-  String? _selectedBloodType;
-
-  final List<String> _bloodTypes = [
-    'A+',
-    'A-',
-    'B+',
-    'B-',
-    'AB+',
-    'AB-',
-    'O+',
-    'O-'
-  ];
+  final TextEditingController _bloodTypeController = TextEditingController();
 
   @override
   void initState() {
@@ -783,7 +779,7 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
       _diastolicController.text =
           profile.diastolicBloodPressure?.toString() ?? '';
       _bloodSugarController.text = profile.bloodSugarLevel?.toString() ?? '';
-      _selectedBloodType = profile.bloodType;
+      _bloodTypeController.text = profile.bloodType ?? '';
       _chronicDiseasesController.text = profile.chronicDiseases.join(', ');
       _drugAllergiesController.text = profile.drugAllergies.join(', ');
     }
@@ -851,8 +847,6 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
                         keyboardType: TextInputType.number,
                       ),
                       SizedBox(height: 16),
-                      _buildDropdownField(),
-                      SizedBox(height: 16),
                       _buildBloodPressureFields(),
                       SizedBox(height: 16),
                       _buildTextField(
@@ -860,6 +854,12 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
                         label: 'ระดับน้ำตาลในเลือด (mg/dL)',
                         icon: Icons.water_drop,
                         keyboardType: TextInputType.number,
+                      ),
+                      SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _bloodTypeController,
+                        label: 'หมู่เลือด',
+                        icon: Icons.bloodtype,
                       ),
                       SizedBox(height: 16),
                       _buildTextField(
@@ -927,55 +927,21 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
     );
   }
 
-  Widget _buildDropdownField() {
-    return DropdownButtonFormField<String>(
-      value: _selectedBloodType,
-      decoration: InputDecoration(
-        labelText: 'หมู่เลือด',
-        prefixIcon: Icon(Icons.bloodtype),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      items: _bloodTypes
-          .map((type) => DropdownMenuItem(
-                value: type,
-                child: Text(type),
-              ))
-          .toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedBloodType = value;
-        });
-      },
-    );
-  }
-
   Widget _buildBloodPressureFields() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: TextFormField(
-            controller: _systolicController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'ความดันตัวบน',
-              prefixIcon: Icon(Icons.favorite),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
+        _buildTextField(
+          controller: _systolicController,
+          label: 'ความดันโลหิตบน',
+          icon: Icons.favorite,
+          keyboardType: TextInputType.number,
         ),
-        SizedBox(width: 16),
-        Expanded(
-          child: TextFormField(
-            controller: _diastolicController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'ความดันตัวล่าง',
-              prefixIcon: Icon(Icons.favorite),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
+        SizedBox(height: 16),
+        _buildTextField(
+          controller: _diastolicController,
+          label: 'ความดันโลหิตล่าง',
+          icon: Icons.favorite,
+          keyboardType: TextInputType.number,
         ),
       ],
     );
@@ -1010,7 +976,9 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
         weight: double.tryParse(_weightController.text),
         waistCircumference: double.tryParse(_waistController.text),
         chronicDiseases: chronicDiseasesList,
-        bloodType: _selectedBloodType,
+        bloodType: _bloodTypeController.text.isNotEmpty
+            ? _bloodTypeController.text
+            : null,
         systolicBloodPressure: int.tryParse(_systolicController.text),
         diastolicBloodPressure: int.tryParse(_diastolicController.text),
         drugAllergies: drugAllergiesList,
@@ -1056,6 +1024,7 @@ class _EditHealthProfileDialogState extends State<EditHealthProfileDialog> {
     _bloodSugarController.dispose();
     _chronicDiseasesController.dispose();
     _drugAllergiesController.dispose();
+    _bloodTypeController.dispose();
     super.dispose();
   }
 }
